@@ -27,12 +27,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         sql => sql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null)));
 
 // ================= 3. Identity Configuration (Modified) =================
-// ملاحظة: استبدلنا AddIdentityCore بـ AddIdentity لضمان عمل الـ Roles والتحقق بشكل كامل
+// ================= 3. Identity Configuration (Modified) =================
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 6;
-    options.User.RequireUniqueEmail = true;
+    // الإعدادات السهلة اللي طلبتها
+    options.Password.RequireDigit = false;             // لا يشترط أرقام
+    options.Password.RequiredLength = 6;                // الطول الأدنى 6 خانات فقط
+    options.Password.RequireNonAlphanumeric = false;    // لا يشترط رموز (@, #, !)
+    options.Password.RequireUppercase = false;          // لا يشترط حروف كبيرة
+    options.Password.RequireLowercase = false;          // لا يشترط حروف صغيرة
+    options.Password.RequiredUniqueChars = 1;           // حرف واحد مختلف يكفي
+
+    options.User.RequireUniqueEmail = true;             // الحفاظ على فريد الإيميل (أمان أساسي)
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
@@ -83,16 +89,22 @@ app.UseAuthentication(); // يجب أن يسبق الـ Authorization
 app.UseAuthorization();
 
 // ================= 6. Safe Role Seeding =================
+
 using (var scope = app.Services.CreateScope())
 {
     try
     {
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        var roles = Enum.GetNames<UserType>();
+
+        // غيرنا UserType لـ UserRole عشان يطابق الـ Models الجديدة
+        var roles = Enum.GetNames<UserRole>();
+
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))
+            {
                 await roleManager.CreateAsync(new IdentityRole(role));
+            }
         }
     }
     catch (Exception ex)

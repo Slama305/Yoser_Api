@@ -20,7 +20,7 @@ namespace Yoser_API.Controllers
             _context = context;
         }
 
-        // 1. الحصول على بيانات البروفايل الخاص بي
+        // ================= 1. الحصول على بيانات البروفايل الخاص بي =================
         [HttpGet("my-profile")]
         public async Task<IActionResult> GetMyProfile()
         {
@@ -33,24 +33,37 @@ namespace Yoser_API.Controllers
                 .FirstOrDefaultAsync(p => p.UserId == userId);
 
             if (profile == null)
-                return NotFound("لم يتم العثور على بروفايل لهذا المستخدم.");
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    Status = false,
+                    Message = "لم يتم العثور على بروفايل لهذا المستخدم."
+                });
+            }
 
-            // عرض البيانات بشكل منظم
-            var response = new
+            // عرض البيانات بشكل منظم داخل الـ Data
+            var profileData = new
             {
                 profile.Id,
                 profile.User.FullName,
                 profile.User.Email,
                 profile.Age,
-                profile.MedicalCondition,
+                profile.MedicalCondition, // ضفناه عشان التناسق
+                profile.ChronicDiseases,
                 profile.EmergencyContact,
+                Category = profile.Category.ToString(),
                 JoinedAt = profile.User.CreatedAt
             };
 
-            return Ok(response);
+            return Ok(new ApiResponse<object>
+            {
+                Status = true,
+                Message = "تم جلب بيانات البروفايل بنجاح",
+                Data = profileData
+            });
         }
 
-        // 2. تحديث بيانات البروفايل (مثل السن والحالة الصحية)
+        // ================= 2. تحديث بيانات البروفايل =================
         [HttpPut("update-profile")]
         public async Task<IActionResult> UpdateProfile(UpdatePatientProfileDto dto)
         {
@@ -58,17 +71,28 @@ namespace Yoser_API.Controllers
             var profile = await _context.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
 
             if (profile == null)
-                return BadRequest("البروفايل غير موجود.");
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Status = false,
+                    Message = "البروفايل غير موجود."
+                });
+            }
 
-            // تحديث الحقول فقط
+            // تحديث الحقول
             profile.Age = dto.Age;
-            profile.MedicalCondition = dto.MedicalCondition;
+            profile.ChronicDiseases = dto.MedicalCondition; // هنا استعملنا MedicalCondition من الـ DTO لملء ChronicDiseases
             profile.EmergencyContact = dto.EmergencyContact;
 
             _context.PatientProfiles.Update(profile);
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "تم تحديث البيانات الطبية بنجاح." });
+            return Ok(new ApiResponse<object>
+            {
+                Status = true,
+                Message = "تم تحديث البيانات الطبية بنجاح.",
+                Data = new { profile.Id, profile.Age, profile.ChronicDiseases }
+            });
         }
     }
 }

@@ -7,24 +7,16 @@ namespace Yoser_API.Data.Models
     {
         [Key]
         public int Id { get; set; }
+        public int PatientId { get; set; }
+        public int ProviderId { get; set; }
 
         [Required]
-        public int PatientId { get; set; } // المريض اللي حجز
-
-        [Required]
-        public int ProviderId { get; set; } // الدكتور أو الممرض اللي اتحجز عنده
-
-        [Required]
-        public DateTime AppointmentDate { get; set; } // ميعاد الحجز
-
-        [MaxLength(500)]
-        public string Notes { get; set; } // ملاحظات المريض (اختياري)
-
-        public string Status { get; set; } = "Pending"; // Pending, Approved, Rejected, Cancelled
+        public DateTime AppointmentDate { get; set; }
+        public string Status { get; set; } = "Pending"; // Pending, Approved, Completed
+        public string Notes { get; set; }
 
         [ForeignKey("PatientId")]
         public virtual PatientProfile Patient { get; set; }
-
         [ForeignKey("ProviderId")]
         public virtual MedicalProvider Provider { get; set; }
     }

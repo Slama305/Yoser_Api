@@ -20,17 +20,17 @@ namespace Yoser_API.Controllers
             _context = context;
         }
 
-        // 1. إكمال أو تحديث بيانات الطبيب
+        // ================= 1. تحديث بيانات مقدم الخدمة (الطبيب/الممرض) =================
         [HttpPost("update-profile")]
         public async Task<IActionResult> UpdateProfile(UpdateProviderProfileDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // البحث عن البروفايل أو إنشاؤه إذا لم يكن موجوداً
             var provider = await _context.MedicalProviders.FirstOrDefaultAsync(p => p.UserId == userId);
 
             if (provider == null)
             {
+                // في حالة لم يتم إنشاؤه أثناء الـ Register لسبب ما
                 provider = new MedicalProvider { UserId = userId };
                 _context.MedicalProviders.Add(provider);
             }
@@ -42,10 +42,16 @@ namespace Yoser_API.Controllers
             provider.IsAvailable = dto.IsAvailable;
 
             await _context.SaveChangesAsync();
-            return Ok(new { Message = "تم تحديث بياناتك المهنية بنجاح." });
+
+            return Ok(new ApiResponse<object>
+            {
+                Status = true,
+                Message = "تم تحديث بياناتك المهنية بنجاح.",
+                Data = new { provider.Id, provider.Specialty, provider.IsAvailable }
+            });
         }
 
-        // 2. الحصول على بيانات بروفايلي (للطبيب نفسه)
+        // ================= 2. الحصول على بيانات بروفايلي (للطبيب نفسه) =================
         [HttpGet("my-profile")]
         public async Task<IActionResult> GetMyProfile()
         {
@@ -54,21 +60,45 @@ namespace Yoser_API.Controllers
                 .Include(p => p.User)
                 .FirstOrDefaultAsync(p => p.UserId == userId);
 
-            if (provider == null) return NotFound("لم يتم العثور على بيانات مقدم الخدمة.");
+            if (provider == null)
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    Status = false,
+                    Message = "لم يتم العثور على بيانات مقدم الخدمة."
+                });
+            }
 
-            return Ok(provider);
+            var providerData = new
+            {
+                provider.Id,
+                provider.User.FullName,
+                provider.User.Email,
+                provider.Specialty,
+                provider.Bio,
+                provider.Address,
+                provider.Price,
+                provider.IsAvailable,
+                Type = provider.Type.ToString()
+            };
+
+            return Ok(new ApiResponse<object>
+            {
+                Status = true,
+                Message = "تم جلب بيانات البروفايل بنجاح",
+                Data = providerData
+            });
         }
 
-        // 3. عرض جميع الأطباء المتاحين (للمرضى)
+        // ================= 3. عرض مقدمي الخدمة المتاحين (للمرضى) =================
         [HttpGet("all-providers")]
-        [AllowAnonymous] // متاح للجميع حتى بدون تسجيل دخول
+        [AllowAnonymous] // متاح للبحث حتى قبل تسجيل الدخول
         public async Task<IActionResult> GetAllProviders([FromQuery] string? specialty)
         {
             var query = _context.MedicalProviders
                 .Include(p => p.User)
                 .Where(p => p.IsAvailable);
 
-            // إمكانية الفلترة حسب التخصص
             if (!string.IsNullOrEmpty(specialty))
             {
                 query = query.Where(p => p.Specialty.Contains(specialty));
@@ -80,10 +110,16 @@ namespace Yoser_API.Controllers
                 p.Specialty,
                 p.Price,
                 p.Address,
-                p.Bio
+                p.Bio,
+                Type = p.Type.ToString()
             }).ToListAsync();
 
-            return Ok(providers);
+            return Ok(new ApiResponse<object>
+            {
+                Status = true,
+                Message = $"تم العثور على ({providers.Count}) مقدم خدمة.",
+                Data = providers
+            });
         }
     }
 }

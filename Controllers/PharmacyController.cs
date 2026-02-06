@@ -21,17 +21,30 @@ namespace Yoser_API.Controllers
             _context = context;
         }
 
-        // 1. رفع طلب صيدلية جديد (تخزين في الداتابيز)
+        // ================= 1. رفع طلب صيدلية جديد =================
         [HttpPost("upload-prescription")]
         public async Task<IActionResult> UploadPrescription([FromForm] CreateOrderDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var patient = await _context.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
 
-            if (patient == null) return BadRequest("بروفايل المريض غير موجود.");
+            if (patient == null)
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Status = false,
+                    Message = "بروفايل المريض غير موجود."
+                });
+            }
 
             if (dto.ImageFile == null || dto.ImageFile.Length == 0)
-                return BadRequest("يرجى رفع صورة الروشتة.");
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Status = false,
+                    Message = "يرجى رفع صورة الروشتة."
+                });
+            }
 
             // تحويل الصورة إلى Byte Array
             using var memoryStream = new MemoryStream();
@@ -48,33 +61,50 @@ namespace Yoser_API.Controllers
             _context.PharmacyOrders.Add(order);
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "تم رفع الطلب بنجاح وتخزين الصورة في قاعدة البيانات." });
+            return Ok(new ApiResponse<object>
+            {
+                Status = true,
+                Message = "تم رفع الطلب بنجاح وتخزين الصورة.",
+                Data = new { OrderId = order.Id, order.Status }
+            });
         }
 
-        // 2. الحصول على الصورة لعرضها في الفرونت إند
+        // ================= 2. عرض الصورة (مستثنى من Wrapper) =================
         [HttpGet("image/{orderId}")]
+        [AllowAnonymous] // للسماح للمتصفح أو الموبايل بعرض الصورة مباشرة عبر الرابط
         public async Task<IActionResult> GetPrescriptionImage(int orderId)
         {
             var order = await _context.PharmacyOrders.FindAsync(orderId);
 
             if (order == null || order.PrescriptionData == null)
-                return NotFound("الصورة غير موجودة.");
+                return NotFound();
 
-            // إرجاع مصفوفة البايتات كملف صورة
+            // هنا نرجع File مباشرة وليس ApiResponse لأن هذا Endpoint لغرض العرض فقط
             return File(order.PrescriptionData, order.ImageContentType ?? "image/jpeg");
         }
 
-        // 3. عرض جميع طلباتي كمريض
+        // ================= 3. عرض جميع طلباتي كمريض =================
         [HttpGet("my-orders")]
         public async Task<IActionResult> GetMyOrders()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             var orders = await _context.PharmacyOrders
                 .Where(o => o.Patient.UserId == userId)
-                .Select(o => new { o.Id, o.Status })
+                .Select(o => new {
+                    o.Id,
+                    o.Status,
+                    // إنشاء رابط مباشر للصورة ليسهل على الفرونت إند عرضها
+                    ImageUrl = $"{Request.Scheme}://{Request.Host}/api/Pharmacy/image/{o.Id}"
+                })
                 .ToListAsync();
 
-            return Ok(orders);
+            return Ok(new ApiResponse<object>
+            {
+                Status = true,
+                Message = "تم جلب الطلبات بنجاح",
+                Data = orders
+            });
         }
     }
 }

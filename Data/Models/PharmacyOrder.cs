@@ -1,23 +1,22 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Yoser_API.Data.Models;
 
-public class PharmacyOrder
+namespace Yoser_API.Data.Models // ضفنا كلمة namespace هنا
 {
-    [Key]
-    public int Id { get; set; }
+    public class PharmacyOrder
+    {
+        [Key]
+        public int Id { get; set; }
+        public int PatientId { get; set; }
 
-    [Required]
-    public int PatientId { get; set; }
+        [Required]
+        public byte[] PrescriptionData { get; set; } // مخزنة كـ Byte Array في الداتابيز
+        public string? ImageContentType { get; set; }
 
-    [Required]
-    public byte[] PrescriptionData { get; set; } // تخزين الصورة كبيانات ثنائية
+        public string Status { get; set; } = "Pending";
+        public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 
-    public string? ImageContentType { get; set; } // لتخزين نوع الصورة (image/png, image/jpeg)
-
-    [Required, MaxLength(50)]
-    public string Status { get; set; } = "Pending";
-
-    [ForeignKey("PatientId")]
-    public virtual PatientProfile Patient { get; set; }
+        [ForeignKey("PatientId")]
+        public virtual PatientProfile Patient { get; set; }
+    }
 }

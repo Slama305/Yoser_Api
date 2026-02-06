@@ -7,19 +7,12 @@ namespace Yoser_API.Data.Models
     {
         [Key]
         public int Id { get; set; }
-
-        [Required]
-        public int PatientId { get; set; } // FK لملف المريض
+        public int PatientId { get; set; }
 
         [Required, MaxLength(100)]
         public string MedName { get; set; }
-
-        [Required, MaxLength(50)]
         public string Dosage { get; set; }
-
-        [Required]
         public DateTime ReminderTime { get; set; }
-
         public bool IsTaken { get; set; } = false;
 
         [ForeignKey("PatientId")]

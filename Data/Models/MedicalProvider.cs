@@ -7,22 +7,16 @@ namespace Yoser_API.Data.Models
     {
         [Key]
         public int Id { get; set; }
+        public string UserId { get; set; }
 
         [Required]
-        public string UserId { get; set; }
+        public ProviderType Type { get; set; } // دكتور أو ممرض
 
         [Required, MaxLength(100)]
         public string Specialty { get; set; }
-
-        [MaxLength(1000)]
         public string Bio { get; set; }
-
-        [Required, MaxLength(200)]
         public string Address { get; set; }
-
-        [Range(0, 10000)]
         public decimal Price { get; set; }
-
         public bool IsAvailable { get; set; } = true;
 
         [ForeignKey("UserId")]

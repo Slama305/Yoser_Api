@@ -11,14 +11,19 @@ namespace Yoser_API.Data.Models
         [Required]
         public string UserId { get; set; }
 
-        [Required, MaxLength(500)]
-        public string MedicalCondition { get; set; }
+        [Required]
+        public PatientCategory Category { get; set; } // كبير سن أو ذوي همم
 
-        [Range(1, 120)]
         public int Age { get; set; }
 
-        [Required, Phone]
+        [Required]
         public string EmergencyContact { get; set; }
+
+        // الحقل المطلوب لحل خطأ الـ AuthController
+        public string MedicalCondition { get; set; } = "None";
+
+        // لإضافة الأمراض (اللي اتفقنا عليها في المخطط)
+        public string ChronicDiseases { get; set; } = "None";
 
         [ForeignKey("UserId")]
         public virtual ApplicationUser User { get; set; }

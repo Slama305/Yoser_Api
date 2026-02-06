@@ -6,9 +6,7 @@ namespace Yoser_API.Data
 {
     public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-        {
-        }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<PatientProfile> PatientProfiles { get; set; }
         public DbSet<MedicalProvider> MedicalProviders { get; set; }
@@ -20,16 +18,12 @@ namespace Yoser_API.Data
         {
             base.OnModelCreating(builder);
 
-            builder.Entity<PatientProfile>()
-                .HasOne(p => p.User)
-                .WithOne()
-                .HasForeignKey<PatientProfile>(p => p.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
+            // ضبط سعر الكشف
             builder.Entity<MedicalProvider>()
-                .Property(s => s.Price)
+                .Property(p => p.Price)
                 .HasColumnType("decimal(18,2)");
 
+            // منع المسح المتسلسل في المواعيد عشان الداتابيز متضربش لو مريض اتمسح
             builder.Entity<Appointment>()
                 .HasOne(a => a.Patient)
                 .WithMany()
@@ -42,5 +36,6 @@ namespace Yoser_API.Data
                 .HasForeignKey(a => a.ProviderId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
-    }
+    
+}
 }

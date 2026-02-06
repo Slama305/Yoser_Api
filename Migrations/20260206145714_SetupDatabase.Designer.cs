@@ -12,8 +12,8 @@ using Yoser_API.Data;
 namespace Yoser_API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260203092506_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260206145714_SetupDatabase")]
+    partial class SetupDatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -208,7 +208,7 @@ namespace Yoser_API.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<int>("RoleType")
+                    b.Property<int>("Role")
                         .HasColumnType("int");
 
                     b.Property<string>("SecurityStamp")
@@ -234,6 +234,40 @@ namespace Yoser_API.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("Yoser_API.Data.Models.Appointment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AppointmentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProviderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientId");
+
+                    b.HasIndex("ProviderId");
+
+                    b.ToTable("Appointments");
+                });
+
             modelBuilder.Entity("Yoser_API.Data.Models.MedicalProvider", b =>
                 {
                     b.Property<int>("Id")
@@ -244,13 +278,11 @@ namespace Yoser_API.Migrations
 
                     b.Property<string>("Address")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Bio")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");
@@ -262,6 +294,9 @@ namespace Yoser_API.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -284,8 +319,7 @@ namespace Yoser_API.Migrations
 
                     b.Property<string>("Dosage")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsTaken")
                         .HasColumnType("bit");
@@ -319,14 +353,16 @@ namespace Yoser_API.Migrations
                     b.Property<int>("Age")
                         .HasColumnType("int");
 
-                    b.Property<string>("EmergencyContact")
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ChronicDiseases")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("MedicalCondition")
+                    b.Property<string>("EmergencyContact")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -334,8 +370,7 @@ namespace Yoser_API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("PatientProfiles");
                 });
@@ -348,18 +383,22 @@ namespace Yoser_API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ImageContentType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("PatientId")
                         .HasColumnType("int");
 
-                    b.Property<string>("PrescriptionPath")
+                    b.Property<byte[]>("PrescriptionData")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("varbinary(max)");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -419,6 +458,25 @@ namespace Yoser_API.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Yoser_API.Data.Models.Appointment", b =>
+                {
+                    b.HasOne("Yoser_API.Data.Models.PatientProfile", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Yoser_API.Data.Models.MedicalProvider", "Provider")
+                        .WithMany()
+                        .HasForeignKey("ProviderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+
+                    b.Navigation("Provider");
+                });
+
             modelBuilder.Entity("Yoser_API.Data.Models.MedicalProvider", b =>
                 {
                     b.HasOne("Yoser_API.Data.Models.ApplicationUser", "User")
@@ -444,8 +502,8 @@ namespace Yoser_API.Migrations
             modelBuilder.Entity("Yoser_API.Data.Models.PatientProfile", b =>
                 {
                     b.HasOne("Yoser_API.Data.Models.ApplicationUser", "User")
-                        .WithOne()
-                        .HasForeignKey("Yoser_API.Data.Models.PatientProfile", "UserId")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
